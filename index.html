@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salasilah Keluarga Sulaiman</title>
+    
+    <!-- Memuat turun pustaka Supabase JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #f3f4f6; 
+            padding: 20px; 
+        }
+        .kotak-utama { 
+            background-color: white; 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 30px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+        }
+        h1 { text-align: center; color: #1f2937; }
+        .senarai-ahli {
+            background-color: #e5e7eb;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 8px;
+            list-style-type: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="kotak-utama">
+        <h1>Salasilah Keluarga Datuk Sulaiman</h1>
+        <hr>
+        <p>Senarai ahli keluarga dari pangkalan data:</p>
+        
+        <!-- Data dari Supabase akan dipaparkan di sini -->
+        <ul id="senarai-keluarga">
+            <li>Sedang memuat turun data...</li>
+        </ul>
+    </div>
+
+    <script>
+        // 1. Masukkan maklumat Supabase anda di sini
+        const supabaseUrl = 'https://waybudfnieibokxzkjjl.supabase.co';
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndheWJ1ZGZuaWVpYm9reHprampsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk3NjQwMjUsImV4cCI6MjEwNTM0MDAyNX0.yyAuvvKCZ4P4j0xYZ30eOk5lw1XIqWaqarojniAkAwI';
+        
+        // 2. Hubungkan ke Supabase
+        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+        // 3. Fungsi untuk mengambil dan memaparkan data
+        async function paparDataKeluarga() {
+            // Arahkan Supabase untuk mengambil semua data dari jadual ahli_keluarga
+            const { data, error } = await supabaseClient
+                .from('ahli_keluarga')
+                .select('*');
+
+            if (error) {
+                console.error("Ralat:", error);
+                document.getElementById('senarai-keluarga').innerHTML = "<li>Ralat mengambil data. Pastikan URL dan Kunci API betul.</li>";
+                return;
+            }
+
+            // Kosongkan senarai asal
+            const ruangSenarai = document.getElementById('senarai-keluarga');
+            ruangSenarai.innerHTML = '';
+
+            // Paparkan setiap nama yang diambil dari pangkalan data
+            data.forEach(function(ahli) {
+                const elemenBaru = document.createElement('li');
+                elemenBaru.className = 'senarai-ahli';
+                elemenBaru.innerHTML = `<strong>${ahli.nama_penuh}</strong> - ${ahli.jantina}`;
+                ruangSenarai.appendChild(elemenBaru);
+            });
+        }
+
+        // Jalankan fungsi ini sebaik sahaja web dibuka
+        paparDataKeluarga();
+    </script>
+
+</body>
+</html>
