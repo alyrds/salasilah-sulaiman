@@ -8,12 +8,19 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%); min-height: 100vh; padding: 40px 20px; color: #333; }
-        .header { text-align: center; margin-bottom: 30px; }
+        .header { text-align: center; margin-bottom: 20px; }
         .header h1 { color: #1e293b; font-size: 2.5rem; margin-bottom: 10px; text-shadow: 1px 1px 3px rgba(0,0,0,0.1); }
         .header p { color: #64748b; font-size: 1.1rem; }
         
-        .ruang-pokok { display: flex; justify-content: center; overflow-x: auto; padding-bottom: 40px; }
-        .tree ul { padding-top: 20px; position: relative; display: flex; justify-content: center; }
+        .kawalan-zoom { text-align: center; margin-bottom: 20px; display: none; }
+        .btn-reset-zoom { padding: 8px 20px; background-color: #3b82f6; color: white; border: none; border-radius: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; }
+        .btn-reset-zoom:hover { background-color: #2563eb; transform: scale(1.05); }
+
+        .ruang-pokok { display: block; text-align: center; overflow: auto; padding-bottom: 60px; cursor: grab; width: 100%; user-select: none; }
+        .ruang-pokok:active { cursor: grabbing; }
+        .tree { display: inline-block; text-align: left; min-width: max-content; padding: 40px; }
+        
+        .tree ul { position: relative; display: flex; justify-content: center; }
         .tree li { float: left; text-align: center; list-style-type: none; position: relative; padding: 20px 15px 0 15px; }
         .tree li::before, .tree li::after { content: ''; position: absolute; top: 0; right: 50%; border-top: 2px solid #94a3b8; width: 50%; height: 20px; }
         .tree li::after { right: auto; left: 50%; border-left: 2px solid #94a3b8; }
@@ -25,46 +32,30 @@
         .tree ul ul::before { content: ''; position: absolute; top: 0; left: 50%; border-left: 2px solid #94a3b8; width: 0; height: 20px; transform: translateX(-50%); }
 
         .pasangan-wrapper { display: flex; justify-content: center; align-items: center; gap: 15px; position: relative; }
-        .garis-kahwin { width: 30px; height: 3px; background-color: #ef4444; border-radius: 2px; position: relative; }
         .pasangan-wrapper::after { content: ''; position: absolute; bottom: -20px; left: 50%; border-left: 2px solid #94a3b8; height: 20px; transform: translateX(-50%); }
+        .garis-kahwin { width: 30px; height: 3px; background-color: #ef4444; border-radius: 2px; position: relative; flex-shrink: 0;}
+        .garis-kahwin.bercerai { background-color: transparent; border-top: 3px dashed #94a3b8; height: 0; top: 1px; }
 
         .kad-ahli { background: white; border-radius: 12px; padding: 15px 25px; display: inline-block; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid #3b82f6; min-width: 150px; position: relative; z-index: 2; transition: transform 0.2s, box-shadow 0.2s;}
         .kad-ahli:hover { transform: translateY(-5px); box-shadow: 0 10px 15px rgba(0,0,0,0.1); }
         .kad-ahli.perempuan { border-top-color: #ec4899; }
+        
+        .kad-ahli.meninggal { background: #f8fafc; border-top-color: #64748b !important; opacity: 0.9; }
+        .kad-ahli.meninggal .avatar { filter: grayscale(100%); border-color: #cbd5e1; }
+        .kad-ahli.meninggal .nama { color: #475569; }
+        .tag-arwah { font-size: 0.7rem; color: #64748b; font-weight: bold; background: #e2e8f0; padding: 2px 8px; border-radius: 12px; display: inline-block; margin-top: 5px; }
+
         .avatar { width: 65px; height: 65px; border-radius: 50%; margin-bottom: 12px; border: 3px solid #f1f5f9; object-fit: cover;}
         .nama { font-weight: 700; color: #0f172a; font-size: 1.05rem; }
         .jantina { font-size: 0.75rem; color: #64748b; margin-top: 5px; text-transform: uppercase; font-weight: 600; }
         .tahun-lahir { font-size: 0.75rem; color: #94a3b8; font-weight: bold; margin-top: 3px; }
         
-        /* DESAIN BARU: Tombol Edit Ikon di Kanan Atas (Tampil saat Hover) */
-        .btn-edit-kad { 
-            position: absolute; 
-            top: 8px; 
-            right: 8px; 
-            cursor: pointer; 
-            background: white; 
-            border: 1px solid #e2e8f0;
-            border-radius: 50%; 
-            width: 28px; 
-            height: 28px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            font-size: 0.8rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
-            opacity: 0; /* Sembunyikan secara default */
-            visibility: hidden;
-            transition: all 0.2s ease;
-        }
-        /* Tampilkan tombol saat mouse hover di atas kartu */
-        .kad-ahli:hover .btn-edit-kad { 
-            opacity: 1; 
-            visibility: visible;
-        }
-        .btn-edit-kad:hover { 
-            background: #f8fafc; 
-            transform: scale(1.1);
-        }
+        .ikon-tindakan { position: absolute; top: 8px; cursor: pointer; background: white; border: 1px solid #e2e8f0; border-radius: 50%; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.05); opacity: 0; visibility: hidden; transition: all 0.2s ease; color: #64748b; }
+        .btn-edit-kad { right: 8px; }
+        .btn-zoom-kad { left: 8px; font-family: monospace; font-size: 0.85rem;}
+        .kad-ahli:hover .ikon-tindakan { opacity: 1; visibility: visible; }
+        .btn-edit-kad:hover { background: #f8fafc; transform: scale(1.1); color: #3b82f6; }
+        .btn-zoom-kad:hover { background: #f8fafc; transform: scale(1.1); color: #10b981; }
 
         .ruang-borang { max-width: 600px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-top: 20px; border-top: 5px solid #10b981; }
         .ruang-borang.mod-edit { border-top-color: #f59e0b; }
@@ -72,7 +63,6 @@
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: 600; color: #475569; }
         .form-group input, .form-group select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 1rem; }
-        
         .kumpulan-butang { display: flex; gap: 10px; margin-top: 20px; }
         .btn-tambah { flex: 1; padding: 12px; background-color: #10b981; color: white; border: none; border-radius: 6px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: background 0.3s; }
         .btn-tambah:hover { background-color: #059669; }
@@ -89,7 +79,11 @@
         <p>Dokumentasi Digital Generasi Keluarga</p>
     </div>
     
-    <div class="ruang-pokok">
+    <div class="kawalan-zoom" id="kawalan-zoom">
+        <button class="btn-reset-zoom" onclick="resetZoom()">⬅ Kembali ke Carta Penuh</button>
+    </div>
+
+    <div class="ruang-pokok" id="ruang-pokok">
         <div class="tree" id="senarai-keluarga"><p style="text-align:center; padding: 20px;">Memuat turun data...</p></div>
     </div>
 
@@ -102,21 +96,43 @@
                 <label>Nama Penuh</label>
                 <input type="text" id="input_nama" required placeholder="Contoh: Ahmad Bin Abu">
             </div>
-            <div class="form-group">
-                <label>Jantina</label>
-                <select id="input_jantina" required>
-                    <option value="Lelaki">Lelaki</option>
-                    <option value="Perempuan">Perempuan</option>
-                </select>
+            
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 1;">
+                    <label>Jantina</label>
+                    <select id="input_jantina" required>
+                        <option value="Lelaki">Lelaki</option>
+                        <option value="Perempuan">Perempuan</option>
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Status Hayat</label>
+                    <select id="input_status_hayat">
+                        <option value="Hidup">Hidup</option>
+                        <option value="Meninggal Dunia">Meninggal Dunia</option>
+                    </select>
+                </div>
             </div>
+
             <div class="form-group">
                 <label>Tarikh Lahir</label>
                 <input type="date" id="input_tarikh">
             </div>
-            <div class="form-group">
-                <label>Pasangan (Suami/Isteri)</label>
-                <select id="input_pasangan"><option value="">-- Tiada / Belum Direkodkan --</option></select>
+            
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 1;">
+                    <label>Pasangan (Suami/Isteri)</label>
+                    <select id="input_pasangan"><option value="">-- Tiada --</option></select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label>Status Hubungan</label>
+                    <select id="input_status_hubungan">
+                        <option value="Berkahwin">Berkahwin (Semasa)</option>
+                        <option value="Bercerai">Bercerai</option>
+                    </select>
+                </div>
             </div>
+
             <div class="form-group">
                 <label>Bapa (Jika ada dalam sistem)</label>
                 <select id="input_bapa"><option value="">-- Tiada --</option></select>
@@ -139,45 +155,113 @@
         const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
         let dataKeluarga = [];
+        let idAkarSemasa = null; 
 
-        function binaKad(ahli) {
+        // Fungsi Drag & Drop Kanvas
+        const ruangPokok = document.getElementById('ruang-pokok');
+        let isDown = false;
+        let startX, startY, scrollLeft, scrollTop;
+
+        ruangPokok.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.ikon-tindakan')) return;
+            isDown = true;
+            startX = e.pageX - ruangPokok.offsetLeft;
+            startY = e.pageY - ruangPokok.offsetTop;
+            scrollLeft = ruangPokok.scrollLeft;
+            scrollTop = ruangPokok.scrollTop;
+        });
+
+        ruangPokok.addEventListener('mouseleave', () => { isDown = false; });
+        ruangPokok.addEventListener('mouseup', () => { isDown = false; });
+
+        ruangPokok.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - ruangPokok.offsetLeft;
+            const y = e.pageY - ruangPokok.offsetTop;
+            const walkX = (x - startX) * 1.5;
+            const walkY = (y - startY) * 1.5;
+            ruangPokok.scrollLeft = scrollLeft - walkX;
+            ruangPokok.scrollTop = scrollTop - walkY;
+        });
+
+        function pusatkanKanvas() {
+            setTimeout(() => {
+                if (ruangPokok.scrollWidth > ruangPokok.clientWidth) {
+                    ruangPokok.scrollLeft = (ruangPokok.scrollWidth - ruangPokok.clientWidth) / 2;
+                }
+            }, 100);
+        }
+
+        function binaKad(ahli, semuaData) {
             const kelasJantina = ahli.jantina.toLowerCase() === 'perempuan' ? 'perempuan' : 'lelaki';
             const urlAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(ahli.nama_penuh)}&background=random&color=fff&bold=true&size=128`;
             const tahunLahir = ahli.tarikh_lahir ? new Date(ahli.tarikh_lahir).getFullYear() : '';
             const teksTahun = tahunLahir ? `<div class="tahun-lahir">${tahunLahir}</div>` : '';
             
-            // KODE BARU: Tombol edit diletakkan di dalam struktur kartu dengan posisi absolut (ikon pensil saja)
+            const kelasMeninggal = ahli.status_hayat === 'Meninggal Dunia' ? 'meninggal' : '';
+            const tagArwah = ahli.status_hayat === 'Meninggal Dunia' ? `<div class="tag-arwah">Al-Fatihah</div>` : '';
+
+            // Tentukan paparan butang Zoom (Mesti ada pasangan & anak)
+            const senaraiPasangan = cariSemuaPasangan(ahli, semuaData);
+            let adaAnak = false;
+            if (ahli.jantina.toLowerCase() === 'lelaki') {
+                adaAnak = semuaData.some(a => a.id_bapa === ahli.id);
+            } else {
+                adaAnak = semuaData.some(a => a.id_ibu === ahli.id);
+            }
+
+            let btnZoom = '';
+            if (senaraiPasangan.length > 0 && adaAnak) {
+                btnZoom = `<div class="ikon-tindakan btn-zoom-kad" onclick="zoomKeturunan(${ahli.id})" title="Papar keturunan ini sahaja">[ ]</div>`;
+            }
+            
             return `
-                <div class="kad-ahli ${kelasJantina}">
-                    <div class="btn-edit-kad" onclick="aktifkanModEdit(${ahli.id})" title="Kemaskini Rekod">✏️</div>
+                <div class="kad-ahli ${kelasJantina} ${kelasMeninggal}">
+                    ${btnZoom}
+                    <div class="ikon-tindakan btn-edit-kad" onclick="aktifkanModEdit(${ahli.id})" title="Kemaskini Rekod">✏️</div>
                     <img src="${urlAvatar}" class="avatar" alt="Avatar">
                     <div class="nama">${ahli.nama_penuh}</div>
+                    ${tagArwah}
                     <div class="jantina">${ahli.jantina}</div>
                     ${teksTahun}
                 </div>
             `;
         }
 
-        function cariPasangan(individu, semuaData) {
-            if (individu.id_pasangan) return semuaData.find(p => p.id === individu.id_pasangan);
-            const pasanganLain = semuaData.find(p => p.id_pasangan === individu.id);
-            if (pasanganLain) return pasanganLain;
+        // KOD BAHARU: Fungsi mencari KESEMUA pasangan bagi membolehkan > 1 isteri/suami
+        function cariSemuaPasangan(individu, semuaData) {
+            let mapPasangan = new Map();
 
-            let anak;
-            if (individu.jantina.toLowerCase() === 'lelaki') {
-                anak = semuaData.find(a => a.id_bapa === individu.id && a.id_ibu !== null);
-                if (anak) return semuaData.find(p => p.id === anak.id_ibu);
-            } else {
-                anak = semuaData.find(a => a.id_ibu === individu.id && a.id_bapa !== null);
-                if (anak) return semuaData.find(p => p.id === anak.id_bapa);
-            }
-            return null;
+            // 1. Semak melalui pautan id_pasangan
+            semuaData.forEach(p => {
+                if (individu.id_pasangan === p.id) mapPasangan.set(p.id, p);
+                if (p.id_pasangan === individu.id) mapPasangan.set(p.id, p);
+            });
+
+            // 2. Semak melalui anak yang dikongsi bersama
+            semuaData.forEach(anak => {
+                if (individu.jantina.toLowerCase() === 'lelaki') {
+                    if (anak.id_bapa === individu.id && anak.id_ibu) {
+                        const isteri = semuaData.find(p => p.id === anak.id_ibu);
+                        if (isteri) mapPasangan.set(isteri.id, isteri);
+                    }
+                } else {
+                    if (anak.id_ibu === individu.id && anak.id_bapa) {
+                        const suami = semuaData.find(p => p.id === anak.id_bapa);
+                        if (suami) mapPasangan.set(suami.id, suami);
+                    }
+                }
+            });
+
+            return Array.from(mapPasangan.values());
         }
 
-        function binaPokok(semuaData, idInduk = null) {
+        function binaPokok(semuaData, idInduk = null, rootId = 1) {
             let senaraiAnak;
+            
             if (idInduk === null) {
-                senaraiAnak = semuaData.filter(ahli => ahli.id === 1); 
+                senaraiAnak = semuaData.filter(ahli => ahli.id === rootId); 
             } else {
                 const induk = semuaData.find(a => a.id === idInduk);
                 senaraiAnak = induk.jantina.toLowerCase() === 'lelaki' 
@@ -189,20 +273,40 @@
 
             let html = '<ul>';
             senaraiAnak.forEach(anak => {
-                const pasangan = cariPasangan(anak, semuaData);
-                let htmlKadUtama = binaKad(anak);
+                let htmlKadUtama = binaKad(anak, semuaData);
                 let kotakGabungan = htmlKadUtama;
                 
-                if (pasangan) {
-                    const htmlKadPasangan = binaKad(pasangan);
-                    kotakGabungan = anak.jantina.toLowerCase() === 'lelaki' 
-                        ? `<div class="pasangan-wrapper">${htmlKadUtama} <div class="garis-kahwin"></div> ${htmlKadPasangan}</div>`
-                        : `<div class="pasangan-wrapper">${htmlKadPasangan} <div class="garis-kahwin"></div> ${htmlKadUtama}</div>`;
+                // Cari kesemua pasangan yang wujud
+                const semuaPasangan = cariSemuaPasangan(anak, semuaData);
+
+                if (semuaPasangan.length > 0) {
+                    let htmlKiri = '';
+                    let htmlKanan = '';
+
+                    semuaPasangan.forEach((pasangan, index) => {
+                        let kelasGaris = 'garis-kahwin';
+                        // Garis putus-putus automatik jika salah seorang berstatus Meninggal Dunia
+                        if (anak.status_hubungan === 'Bercerai' || pasangan.status_hubungan === 'Bercerai' ||
+                            anak.status_hayat === 'Meninggal Dunia' || pasangan.status_hayat === 'Meninggal Dunia') {
+                            kelasGaris += ' bercerai';
+                        }
+
+                        const kadPasangan = binaKad(pasangan, semuaData);
+
+                        // Selang seli susunan jika pasangan lebih dari satu (kiri, kanan, kiri...)
+                        if (index % 2 === 0) {
+                            htmlKanan += `<div class="${kelasGaris}"></div> ${kadPasangan}`;
+                        } else {
+                            htmlKiri = `${kadPasangan} <div class="${kelasGaris}"></div>` + htmlKiri;
+                        }
+                    });
+
+                    kotakGabungan = `<div class="pasangan-wrapper">${htmlKiri}${htmlKadUtama}${htmlKanan}</div>`;
                 } else {
                     kotakGabungan = `<div class="pasangan-wrapper" style="gap:0;">${htmlKadUtama}</div>`;
                 }
 
-                html += `<li>${kotakGabungan}${binaPokok(semuaData, anak.id)}</li>`;
+                html += `<li>${kotakGabungan}${binaPokok(semuaData, anak.id, rootId)}</li>`;
             });
             html += '</ul>';
             return html;
@@ -235,32 +339,57 @@
             if (error) return console.error(error);
             dataKeluarga = data; 
             kemaskiniDropdown(); 
-            document.getElementById('senarai-keluarga').innerHTML = binaPokok(data, null);
+            lukisPokok(); 
+            pusatkanKanvas(); 
+        }
+
+        function lukisPokok() {
+            const root = idAkarSemasa ? idAkarSemasa : 1; 
+            document.getElementById('senarai-keluarga').innerHTML = binaPokok(dataKeluarga, null, root);
+            
+            const butangReset = document.getElementById('kawalan-zoom');
+            if(idAkarSemasa && idAkarSemasa !== 1) {
+                butangReset.style.display = 'block';
+            } else {
+                butangReset.style.display = 'none';
+            }
+        }
+
+        function zoomKeturunan(id) {
+            idAkarSemasa = id;
+            lukisPokok();
+            pusatkanKanvas(); 
+            document.querySelector('.ruang-pokok').scrollIntoView({ behavior: 'smooth' }); 
+        }
+
+        function resetZoom() {
+            idAkarSemasa = null;
+            lukisPokok();
+            pusatkanKanvas(); 
         }
 
         function aktifkanModEdit(idAhli) {
             const ahli = dataKeluarga.find(a => a.id === idAhli);
             if (!ahli) return;
-
             document.getElementById('input_id_edit').value = ahli.id;
             document.getElementById('input_nama').value = ahli.nama_penuh;
             document.getElementById('input_jantina').value = ahli.jantina;
+            document.getElementById('input_status_hayat').value = ahli.status_hayat || 'Hidup';
             document.getElementById('input_tarikh').value = ahli.tarikh_lahir || '';
             document.getElementById('input_pasangan').value = ahli.id_pasangan || '';
+            document.getElementById('input_status_hubungan').value = ahli.status_hubungan || 'Berkahwin';
             document.getElementById('input_bapa').value = ahli.id_bapa || '';
             document.getElementById('input_ibu').value = ahli.id_ibu || '';
-
+            
             document.getElementById('kotak-borang').classList.add('mod-edit');
             document.getElementById('tajuk-borang').innerText = `Kemaskini Rekod: ${ahli.nama_penuh}`;
             document.getElementById('btn-submit').innerText = "Kemaskini Rekod";
-
             document.getElementById('kotak-borang').scrollIntoView({ behavior: 'smooth' });
         }
 
         function batalEdit() {
             document.getElementById('input_id_edit').value = '';
             document.getElementById('borang-keluarga').reset();
-            
             document.getElementById('kotak-borang').classList.remove('mod-edit');
             document.getElementById('tajuk-borang').innerText = "Tambah Ahli Keluarga";
             document.getElementById('btn-submit').innerText = "Simpan Rekod";
@@ -275,14 +404,15 @@
             const rekod = {
                 nama_penuh: document.getElementById('input_nama').value,
                 jantina: document.getElementById('input_jantina').value,
+                status_hayat: document.getElementById('input_status_hayat').value,
                 tarikh_lahir: document.getElementById('input_tarikh').value || null,
                 id_pasangan: document.getElementById('input_pasangan').value || null,
+                status_hubungan: document.getElementById('input_status_hubungan').value,
                 id_bapa: document.getElementById('input_bapa').value || null,
                 id_ibu: document.getElementById('input_ibu').value || null
             };
 
             let prosesData;
-            
             if (idEdit) {
                 prosesData = await supabaseClient.from('ahli_keluarga').update(rekod).eq('id', idEdit);
             } else {
@@ -297,7 +427,6 @@
                 batalEdit(); 
                 paparDataKeluarga(); 
             }
-
             btn.disabled = false;
         });
 
